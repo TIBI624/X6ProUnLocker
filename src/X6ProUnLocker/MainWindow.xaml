@@ -1,6 +1,7 @@
 <Window x:Class="X6ProUnLocker.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:X6ProUnLocker"
         Title="X6ProUnLocker v1.0.0 — System Reanimator" 
         Height="800" Width="1200"
         WindowStartupLocation="CenterScreen"
