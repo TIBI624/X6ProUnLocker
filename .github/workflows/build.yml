@@ -16,7 +16,7 @@ jobs:
       - name: Build
         run: dotnet publish src/X6ProUnLocker/X6ProUnLocker.csproj -c Release -o publish -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: X6ProUnLocker
           path: publish/X6ProUnLocker.exe
