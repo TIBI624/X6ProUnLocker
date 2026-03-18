@@ -14,8 +14,7 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore src/X6ProUnLocker.sln
       - name: Build
-        # 👇 исправлен путь к .csproj (теперь прямо в src)
-        run: dotnet publish src/X6ProUnLocker.csproj -c Release -o publish -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+        run: dotnet publish src/X6ProUnLocker/X6ProUnLocker.csproj -c Release -o publish -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
