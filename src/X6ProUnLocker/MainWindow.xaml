@@ -18,7 +18,7 @@
             <Border x:Name="EnvBorder" Background="#4CAF50" CornerRadius="15" Padding="15,8">
                 <TextBlock x:Name="EnvText" Text="Environment: Normal mode" Foreground="White" FontWeight="Bold"/>
             </Border>
-            <Button Content="🔄 Refresh status" Background="#2196F3" Foreground="White" BorderThickness="0" CornerRadius="15" Padding="20,8" Margin="10,0,0,0" Click="RefreshEnv_Click"/>
+            <Button Content="🔄 Refresh status" Background="#2196F3" Foreground="White" BorderThickness="0" Padding="20,8" Margin="10,0,0,0" Click="RefreshEnv_Click"/>
         </StackPanel>
 
         <!-- Main tabs -->
@@ -33,7 +33,6 @@
                         <Button Content="📋 Properties" Background="#9C27B0" Foreground="White" Padding="10" Margin="5" Click="ShowProperties_Click"/>
                         <Button Content="📂 Open folder" Background="#4CAF50" Foreground="White" Padding="10" Margin="5" Click="OpenFolder_Click"/>
                     </StackPanel>
-                    <!-- Fixed DataGrid: removed invalid MarginTop, using standard Margin with top offset 50 -->
                     <DataGrid x:Name="ProcessGrid" Margin="5,50,5,5" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" RowHeaderWidth="0">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="80"/>
