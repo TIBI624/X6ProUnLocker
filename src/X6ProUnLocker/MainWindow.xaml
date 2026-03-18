@@ -1,0 +1,137 @@
+<Window x:Class="X6ProUnLocker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="X6ProUnLocker v1.0.0 — System Reanimator" 
+        Height="800" Width="1200"
+        WindowStartupLocation="CenterScreen"
+        Icon="Assets/app.ico">
+    <Grid>
+        <!-- Header -->
+        <StackPanel Orientation="Horizontal" Height="100" Margin="10" Background="#FFD700">
+            <Image Source="Assets/logo.png" Height="80" Margin="10"/>
+            <TextBlock Text="X6ProUnLocker v1.0.0" FontSize="36" FontWeight="Bold" Foreground="#1A237E" VerticalAlignment="Center" Margin="10"/>
+            <TextBlock Text="System Reanimator — Recovery in the toughest cases" FontSize="16" Foreground="#1A237E" VerticalAlignment="Center" Margin="10"/>
+        </StackPanel>
+
+        <!-- Environment indicator -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,110,0,0">
+            <Border x:Name="EnvBorder" Background="#4CAF50" CornerRadius="15" Padding="15,8">
+                <TextBlock x:Name="EnvText" Text="Environment: Normal mode" Foreground="White" FontWeight="Bold"/>
+            </Border>
+            <Button Content="🔄 Refresh status" Background="#2196F3" Foreground="White" BorderThickness="0" CornerRadius="15" Padding="20,8" Margin="10,0,0,0" Click="RefreshEnv_Click"/>
+        </StackPanel>
+
+        <!-- Tabs -->
+        <TabControl Margin="10,170,10,10">
+            <TabItem Header="📊 Task Manager">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" Margin="5">
+                        <Button Content="🔄 Refresh" Background="#2196F3" Foreground="White" Padding="10" Margin="5" Click="RefreshProcesses_Click"/>
+                        <Button Content="⏹️ End task" Background="#F44336" Foreground="White" Padding="10" Margin="5" Click="EndProcess_Click"/>
+                        <Button Content="💥 Force kill" Background="#FF5722" Foreground="White" Padding="10" Margin="5" Click="KillProcess_Click"/>
+                        <Button Content="📋 Properties" Background="#9C27B0" Foreground="White" Padding="10" Margin="5" Click="ShowProperties_Click"/>
+                        <Button Content="📂 Open folder" Background="#4CAF50" Foreground="White" Padding="10" Margin="5" Click="OpenFolder_Click"/>
+                    </StackPanel>
+                    <DataGrid x:Name="ProcessGrid" Margin="5" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" RowHeaderWidth="0" MarginTop="50">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="80"/>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="200"/>
+                            <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="300"/>
+                            <DataGridTextColumn Header="Memory (MB)" Binding="{Binding MemoryMB}" Width="120"/>
+                            <DataGridTextColumn Header="CPU %" Binding="{Binding CpuPercent}" Width="80"/>
+                            <DataGridTextColumn Header="Priority" Binding="{Binding Priority}" Width="100"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                            <DataGridTextColumn Header="Company" Binding="{Binding Company}" Width="200"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="💻 CMD Terminal">
+                <Grid>
+                    <local:CmdTerminal x:Name="cmdTerminal" />
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="🛠️ System Tools">
+                <ScrollViewer>
+                    <StackPanel>
+                        <GroupBox Header="🔤 Restore system fonts" BorderBrush="#4CAF50">
+                            <StackPanel>
+                                <TextBlock Text="Restores standard Windows fonts if damaged or missing." Foreground="#CFD8DC" Margin="5"/>
+                                <Button Content="🔤 Restore fonts" Background="#4CAF50" Foreground="White" Padding="10" Margin="5" Click="RestoreFonts_Click"/>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="🔄 Replace system utilities (Sticky Keys)" BorderBrush="#FF9800">
+                            <StackPanel>
+                                <TextBlock Text="Replace system utilities with a chosen .exe to gain access at login screen." Foreground="#CFD8DC" Margin="5"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox x:Name="ExePathBox" Width="300" Margin="5" IsReadOnly="True"/>
+                                    <Button Content="📁 Browse .exe" Background="#2196F3" Foreground="White" Padding="10" Margin="5" Click="BrowseExe_Click"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="🔄 Replace CMD" Background="#FF9800" Foreground="White" Padding="10" Margin="5" Click="ReplaceCmd_Click"/>
+                                    <Button Content="🔄 Replace SETHC" Background="#FF5722" Foreground="White" Padding="10" Margin="5" Click="ReplaceSethc_Click"/>
+                                    <Button Content="🔄 Replace UTILMAN" Background="#FFC100" Foreground="White" Padding="10" Margin="5" Click="ReplaceUtilman_Click"/>
+                                    <Button Content="↩️ Restore originals" Background="#4CAF50" Foreground="White" Padding="10" Margin="5" Click="RestoreOriginals_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="🚀 6 autorun methods + Virus scan" BorderBrush="#2196F3">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox x:Name="RegRunCk" Content="1. Registry HKCU\...\Run" Margin="5" Grid.Row="0" Grid.Column="0"/>
+                                <CheckBox x:Name="RegRunLMCk" Content="2. Registry HKLM\...\Run" Margin="5" Grid.Row="1" Grid.Column="0"/>
+                                <CheckBox x:Name="StartupFolderCk" Content="3. Startup folder" Margin="5" Grid.Row="2" Grid.Column="0"/>
+                                <CheckBox x:Name="TaskSchedulerCk" Content="4. Task Scheduler" Margin="5" Grid.Row="0" Grid.Column="1"/>
+                                <CheckBox x:Name="ServiceCk" Content="5. Windows Service" Margin="5" Grid.Row="1" Grid.Column="1"/>
+                                <CheckBox x:Name="WinIniCk" Content="6. win.ini" Margin="5" Grid.Row="2" Grid.Column="1"/>
+                                <Button Content="✅ Apply selected" Background="#2196F3" Foreground="White" Padding="10" Margin="5" Grid.Row="3" Grid.Column="0" Click="ApplyAutostart_Click"/>
+                                <Button Content="❌ Remove all" Background="#F44336" Foreground="White" Padding="10" Margin="5" Grid.Row="3" Grid.Column="1" Click="RemoveAutostart_Click"/>
+                                <Button Content="🦠 Scan for viruses" Background="#E91E63" Foreground="White" Padding="10" Margin="5" Grid.Row="4" Grid.ColumnSpan="2" Click="ScanForViruses_Click"/>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="🦠 Malware">
+                <DataGrid x:Name="MalwareGrid" AutoGenerateColumns="True" Margin="5"/>
+            </TabItem>
+            <TabItem Header="⚠️ System Issues">
+                <DataGrid x:Name="IssuesGrid" AutoGenerateColumns="True" Margin="5"/>
+            </TabItem>
+            <TabItem Header="🚀 Startup">
+                <DataGrid x:Name="StartupGrid" AutoGenerateColumns="True" Margin="5"/>
+            </TabItem>
+            <TabItem Header="🔧 Drivers">
+                <DataGrid x:Name="DriversGrid" AutoGenerateColumns="True" Margin="5"/>
+            </TabItem>
+            <TabItem Header="⚙️ Services">
+                <DataGrid x:Name="ServicesGrid" AutoGenerateColumns="True" Margin="5"/>
+            </TabItem>
+
+            <TabItem Header="📋 Logs">
+                <RichTextBox x:Name="LogBox" IsReadOnly="True" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" Background="#1E1E1E" Foreground="#CCCCCC"/>
+            </TabItem>
+        </TabControl>
+
+        <!-- Status bar -->
+        <StatusBar VerticalAlignment="Bottom" Background="#263238">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusLabel" Text="Ready" Foreground="#FFD700" FontWeight="Bold"/>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <ProgressBar x:Name="ScanProgress" Width="200" Height="20" Minimum="0" Maximum="100" Value="0"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

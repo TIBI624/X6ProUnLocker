@@ -1,0 +1,17 @@
+<UserControl x:Class="X6ProUnLocker.CmdTerminal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="5">
+            <TextBlock Text="C:\>" Foreground="#4CAF50" FontWeight="Bold" FontFamily="Consolas" VerticalAlignment="Center"/>
+            <TextBox x:Name="InputLine" Width="400" Margin="5" FontFamily="Consolas" KeyDown="InputLine_KeyDown"/>
+            <Button Content="▶ Execute" Background="#4CAF50" Foreground="White" Padding="10" Margin="5" Click="ExecuteButton_Click"/>
+            <Button Content="🗑 Clear" Background="#607D8B" Foreground="White" Padding="10" Margin="5" Click="ClearButton_Click"/>
+        </StackPanel>
+        <RichTextBox x:Name="OutputBox" Grid.Row="1" IsReadOnly="True" FontFamily="Consolas" Background="#1E1E1E" Foreground="#CCCCCC" VerticalScrollBarVisibility="Auto"/>
+    </Grid>
+</UserControl>
