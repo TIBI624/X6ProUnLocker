@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -64,7 +65,7 @@ namespace X6ProUnLocker.Core
                     pgKnownSubject = IntPtr.Zero
                 };
 
-                var guidAction = new Guid("{00AAC56B-CD44-11d0-8CC2-00C04FC295EE}"); // WINTRUST_ACTION_GENERIC_VERIFY_V2
+                var guidAction = new Guid("{00AAC56B-CD44-11d0-8CC2-00C04FC295EE}");
 
                 var trustData = new WinApiNative.WINTRUST_DATA
                 {

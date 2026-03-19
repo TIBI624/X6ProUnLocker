@@ -4,7 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Text;
-using TaskScheduler = Microsoft.Win32.TaskScheduler.TaskService; // требуется ссылка на Microsoft.Win32.TaskScheduler
+using TaskScheduler = Microsoft.Win32.TaskScheduler.TaskService;
 
 namespace X6ProUnLocker.Core
 {
@@ -34,9 +34,10 @@ namespace X6ProUnLocker.Core
 
         private static void CreateShortcut(string targetPath, string shortcutPath)
         {
-            // Используем IWshRuntimeLibrary
-            Type t = Type.GetTypeFromProgID("WScript.Shell");
-            dynamic shell = Activator.CreateInstance(t);
+            Type? t = Type.GetTypeFromProgID("WScript.Shell");
+            if (t == null) return;
+            dynamic? shell = Activator.CreateInstance(t);
+            if (shell == null) return;
             var shortcut = shell.CreateShortcut(shortcutPath);
             shortcut.TargetPath = targetPath;
             shortcut.WorkingDirectory = Path.GetDirectoryName(targetPath);
@@ -59,7 +60,6 @@ namespace X6ProUnLocker.Core
 
         public static void AddToService(string appPath)
         {
-            // Создание службы через sc.exe (альтернатива)
             System.Diagnostics.Process.Start("sc", $"create {ServiceName} binPath= \"{appPath}\" start= auto");
         }
 
@@ -83,7 +83,6 @@ namespace X6ProUnLocker.Core
                     return;
                 }
             }
-            // Если секции нет, добавим
             lines.Add("[windows]");
             lines.Add($"load={appPath}");
             File.WriteAllLines(winIniPath, lines);
@@ -91,18 +90,15 @@ namespace X6ProUnLocker.Core
 
         public static void RemoveAll()
         {
-            // Удалить из реестра
             using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
                 key?.DeleteValue("X6ProUnLocker", false);
             using (var key = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
                 key?.DeleteValue("X6ProUnLocker", false);
 
-            // Удалить ярлык из Startup
             string folder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
             string link = Path.Combine(folder, "X6ProUnLocker.lnk");
             if (File.Exists(link)) File.Delete(link);
 
-            // Удалить задачу
             try
             {
                 using (var ts = new TaskScheduler())
@@ -112,7 +108,6 @@ namespace X6ProUnLocker.Core
             }
             catch { }
 
-            // Удалить службу
             try
             {
                 ServiceController sc = new ServiceController(ServiceName);
@@ -122,7 +117,6 @@ namespace X6ProUnLocker.Core
             }
             catch { }
 
-            // Удалить из win.ini
             string winIniPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "win.ini");
             if (File.Exists(winIniPath))
             {

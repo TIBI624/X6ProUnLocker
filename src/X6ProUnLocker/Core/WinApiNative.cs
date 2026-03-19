@@ -53,9 +53,14 @@ namespace X6ProUnLocker.Core
             IntPtr TokenInformation, uint TokenInformationLength, out uint ReturnLength);
 
         [DllImport(ADVAPI32, SetLastError = true)]
-        public static extern int SetNamedSecurityInfo(string pObjectName, SE_OBJECT_TYPE ObjectType,
-            SECURITY_INFORMATION SecurityInfo, byte[] psidOwner, byte[] psidGroup,
-            byte[] pDacl, byte[] pSacl);
+        public static extern int SetNamedSecurityInfo(
+            string pObjectName,
+            SE_OBJECT_TYPE ObjectType,
+            SECURITY_INFORMATION SecurityInfo,
+            IntPtr psidOwner,
+            IntPtr psidGroup,
+            IntPtr pDacl,
+            IntPtr pSacl);
 
         [DllImport(ADVAPI32, SetLastError = true)]
         public static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(

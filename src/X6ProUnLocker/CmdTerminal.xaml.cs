@@ -13,7 +13,7 @@ namespace X6ProUnLocker
 {
     public partial class CmdTerminal : UserControl, IDisposable
     {
-        private Process cmdProcess;
+        private Process? cmdProcess;
         private List<string> commandHistory = new();
         private int historyIndex = -1;
         private StringBuilder currentOutput = new();
@@ -50,7 +50,7 @@ namespace X6ProUnLocker
             AppendOutput("");
         }
 
-        private void AppendOutput(string text)
+        private void AppendOutput(string? text)
         {
             if (string.IsNullOrEmpty(text)) return;
             Dispatcher.Invoke(() =>
@@ -72,12 +72,12 @@ namespace X6ProUnLocker
             }
             else if (command.StartsWith("cd ", StringComparison.OrdinalIgnoreCase))
             {
-                // Смена директории обрабатывается отдельно
                 string dir = command.Substring(3).Trim();
                 try
                 {
-                    Directory.SetCurrentDirectory(Path.Combine(cmdProcess.StartInfo.WorkingDirectory, dir));
-                    cmdProcess.StartInfo.WorkingDirectory = Directory.GetCurrentDirectory();
+                    Directory.SetCurrentDirectory(Path.Combine(cmdProcess?.StartInfo.WorkingDirectory ?? @"C:\", dir));
+                    if (cmdProcess != null)
+                        cmdProcess.StartInfo.WorkingDirectory = Directory.GetCurrentDirectory();
                     AppendOutput("Current directory: " + Directory.GetCurrentDirectory());
                 }
                 catch (Exception ex)
@@ -87,7 +87,16 @@ namespace X6ProUnLocker
             }
             else
             {
-                cmdProcess.StandardInput.WriteLine(command);
+                if (cmdProcess != null && !cmdProcess.HasExited)
+                {
+                    cmdProcess.StandardInput.WriteLine(command);
+                }
+                else
+                {
+                    AppendOutput("❌ Process not running. Restarting...");
+                    StartCmd();
+                    cmdProcess?.StandardInput.WriteLine(command);
+                }
             }
 
             if (!commandHistory.Contains(command))

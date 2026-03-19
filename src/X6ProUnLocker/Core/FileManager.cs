@@ -9,7 +9,6 @@ namespace X6ProUnLocker.Core
     {
         public static bool TakeOwnership(string filePath)
         {
-            // Запрос привилегии SeTakeOwnershipPrivilege
             IntPtr hToken;
             if (!WinApiNative.OpenProcessToken(System.Diagnostics.Process.GetCurrentProcess().Handle,
                 WinApiNative.TOKEN_ADJUST_PRIVILEGES | WinApiNative.TOKEN_QUERY, out hToken))
@@ -37,21 +36,23 @@ namespace X6ProUnLocker.Core
 
             WinApiNative.CloseHandle(hToken);
 
-            // Получаем SID текущего пользователя
             WindowsIdentity identity = WindowsIdentity.GetCurrent();
             byte[] sid = new byte[identity.User.BinaryLength];
             identity.User.GetBinaryForm(sid, 0);
 
-            // Устанавливаем владельца
+            GCHandle handle = GCHandle.Alloc(sid, GCHandleType.Pinned);
+            IntPtr sidPtr = handle.AddrOfPinnedObject();
+
             int result = WinApiNative.SetNamedSecurityInfo(
                 filePath,
                 WinApiNative.SE_OBJECT_TYPE.SE_FILE_OBJECT,
                 WinApiNative.SECURITY_INFORMATION.OWNER_SECURITY_INFORMATION,
-                sid,
-                null,
-                null,
-                null);
+                sidPtr,
+                IntPtr.Zero,
+                IntPtr.Zero,
+                IntPtr.Zero);
 
+            handle.Free();
             return result == 0;
         }
 
@@ -75,7 +76,6 @@ namespace X6ProUnLocker.Core
                 File.Delete(utilityPath);
                 File.Copy(replacementPath, utilityPath);
 
-                // Восстанавливаем разрешения (DACL) как у оригинала
                 RestoreFilePermissions(utilityPath);
 
                 return true;
@@ -89,7 +89,6 @@ namespace X6ProUnLocker.Core
 
         public static void RestoreFilePermissions(string filePath)
         {
-            // Используем SDDL для установки DACL: SYSTEM: полный, Администраторы: полный, Users: чтение/выполнение
             string sddl = "D:(A;;FA;;;SY)(A;;FA;;;BA)(A;;FRFX;;;BU)";
             IntPtr pSD;
             uint size;
@@ -99,10 +98,10 @@ namespace X6ProUnLocker.Core
                     filePath,
                     WinApiNative.SE_OBJECT_TYPE.SE_FILE_OBJECT,
                     WinApiNative.SECURITY_INFORMATION.DACL_SECURITY_INFORMATION,
-                    null,
-                    null,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
                     pSD,
-                    null);
+                    IntPtr.Zero);
                 Marshal.FreeHGlobal(pSD);
             }
         }

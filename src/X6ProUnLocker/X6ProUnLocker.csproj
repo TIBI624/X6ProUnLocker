@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AssemblyName>X6ProUnLocker</AssemblyName>
     <RootNamespace>X6ProUnLocker</RootNamespace>
@@ -17,13 +17,9 @@
     <Resource Include="Assets\app.ico" />
   </ItemGroup>
 
-  <!-- Добавленные ссылки -->
   <ItemGroup>
-    <!-- 1. Ссылка на System.Management (для WMI) -->
     <PackageReference Include="System.Management" Version="8.0.0" />
-    
-    <!-- 2. Ссылка на библиотеку TaskScheduler (для автозагрузки) -->
     <PackageReference Include="TaskScheduler" Version="2.11.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
   </ItemGroup>
-
 </Project>
