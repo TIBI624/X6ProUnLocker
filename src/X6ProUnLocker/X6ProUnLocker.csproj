@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <Nullable>disable</Nullable>
+    <Nullable>enable</Nullable>   <!-- включено -->
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AssemblyName>X6ProUnLocker</AssemblyName>
     <RootNamespace>X6ProUnLocker</RootNamespace>
