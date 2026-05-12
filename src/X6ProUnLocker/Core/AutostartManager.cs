@@ -2,11 +2,11 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;   // добавлен для Marshal
+using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Text;
 using TaskScheduler = Microsoft.Win32.TaskScheduler.TaskService;
-using Microsoft.Win32.TaskScheduler;     // для ExecAction
+using Microsoft.Win32.TaskScheduler;
 
 namespace X6ProUnLocker.Core
 {
@@ -22,22 +22,46 @@ namespace X6ProUnLocker.Core
             {
                 // HKCU
                 using var cu = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
-                if (cu != null) foreach (var v in cu.GetValueNames()) entries.Add(new AutoStartEntry { Name = v, Path = cu.GetValue(v)?.ToString() ?? "", Location = "HKCU", Type = "Registry" });
+                if (cu != null)
+                    foreach (var v in cu.GetValueNames())
+                        entries.Add(new AutoStartEntry
+                        {
+                            Name = v,
+                            Path = cu.GetValue(v)?.ToString() ?? "",
+                            Location = "HKCU",
+                            Type = "Registry"
+                        });
 
                 // HKLM
                 using var lm = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
-                if (lm != null) foreach (var v in lm.GetValueNames()) entries.Add(new AutoStartEntry { Name = v, Path = lm.GetValue(v)?.ToString() ?? "", Location = "HKLM", Type = "Registry" });
+                if (lm != null)
+                    foreach (var v in lm.GetValueNames())
+                        entries.Add(new AutoStartEntry
+                        {
+                            Name = v,
+                            Path = lm.GetValue(v)?.ToString() ?? "",
+                            Location = "HKLM",
+                            Type = "Registry"
+                        });
 
                 // Startup Folder
                 string sf = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-                if (Directory.Exists(sf)) foreach (var f in Directory.GetFiles(sf, "*.lnk")) entries.Add(new AutoStartEntry { Name = Path.GetFileName(f), Path = f, Location = sf, Type = "Shortcut" });
+                if (Directory.Exists(sf))
+                    foreach (var f in Directory.GetFiles(sf, "*.lnk"))
+                        entries.Add(new AutoStartEntry
+                        {
+                            Name = Path.GetFileName(f),
+                            Path = f,
+                            Location = sf,
+                            Type = "Shortcut"
+                        });
 
                 // Task Scheduler (basic scan)
                 using var ts = new TaskScheduler();
                 foreach (var t in ts.RootFolder.GetTasks())
                     if (t.Name.StartsWith(TaskNamePrefix) || t.Definition.Actions.Count > 0)
                     {
-                        var firstAction = t.Definition.Actions[0] as ExecAction;   // исправлено приведение
+                        var firstAction = t.Definition.Actions[0] as ExecAction;
                         entries.Add(new AutoStartEntry
                         {
                             Name = t.Name,
@@ -58,21 +82,25 @@ namespace X6ProUnLocker.Core
                 switch (location)
                 {
                     case "Registry":
-                        Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)?.SetValue(name, path);
+                        Registry.CurrentUser.OpenSubKey(
+                            @"Software\Microsoft\Windows\CurrentVersion\Run", true)?.SetValue(name, path);
                         break;
                     case "HKLM":
-                        Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)?.SetValue(name, path);
+                        Registry.LocalMachine.OpenSubKey(
+                            @"Software\Microsoft\Windows\CurrentVersion\Run", true)?.SetValue(name, path);
                         break;
                     case "Startup":
-                        CreateShortcut(path, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), name + ".lnk"));
+                        CreateShortcut(path,
+                            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+                                name + ".lnk"));
                         break;
                     case "TaskScheduler":
                         using (var ts = new TaskScheduler())
                         {
                             var task = ts.NewTask();
                             task.RegistrationInfo.Description = name;
-                            task.Triggers.Add(new Microsoft.Win32.TaskScheduler.LogonTrigger());
-                            task.Actions.Add(new Microsoft.Win32.TaskScheduler.ExecAction(path));
+                            task.Triggers.Add(new LogonTrigger());
+                            task.Actions.Add(new ExecAction(path));
                             ts.RootFolder.RegisterTaskDefinition(TaskNamePrefix + name, task);
                         }
                         break;
@@ -89,13 +117,19 @@ namespace X6ProUnLocker.Core
                 switch (location)
                 {
                     case "HKCU":
-                        Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)?.DeleteValue(name, false);
+                        Registry.CurrentUser.OpenSubKey(
+                            @"Software\Microsoft\Windows\CurrentVersion\Run", true)
+                            ?.DeleteValue(name, false);
                         break;
                     case "HKLM":
-                        Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)?.DeleteValue(name, false);
+                        Registry.LocalMachine.OpenSubKey(
+                            @"Software\Microsoft\Windows\CurrentVersion\Run", true)
+                            ?.DeleteValue(name, false);
                         break;
                     case "Startup":
-                        string lnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), name + ".lnk");
+                        string lnk = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+                            name + ".lnk");
                         if (File.Exists(lnk)) File.Delete(lnk);
                         break;
                     case "TaskScheduler":
@@ -122,7 +156,7 @@ namespace X6ProUnLocker.Core
             shortcut.WorkingDirectory = Path.GetDirectoryName(targetPath);
             shortcut.Save();
             Marshal.ReleaseComObject(shortcut);
-            Marshal.ReleaseCOMObject(shell);
+            Marshal.ReleaseComObject(shell);
         }
     }
 }
