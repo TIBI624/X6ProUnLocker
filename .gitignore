@@ -9,3 +9,6 @@ obj/
 *.dll
 *.config
 publish/
+
+# Local
+.nomedia

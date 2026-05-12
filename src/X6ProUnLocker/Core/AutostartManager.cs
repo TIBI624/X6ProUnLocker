@@ -1,7 +1,7 @@
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Text;
 using TaskScheduler = Microsoft.Win32.TaskScheduler.TaskService;
@@ -10,26 +10,94 @@ namespace X6ProUnLocker.Core
 {
     public static class AutostartManager
     {
-        private const string TaskName = "X6ProUnLockerStartup";
-        private const string ServiceName = "X6ProUnLockerAutoStart";
+        private const string TaskNamePrefix = "X6PU_";
+        private const string ServiceNamePrefix = "X6PU_";
 
-        public static void AddToRegistryCurrentUser(string appPath)
+        public static List<AutoStartEntry> GetEntries()
         {
-            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
-            key?.SetValue("X6ProUnLocker", appPath);
+            var entries = new List<AutoStartEntry>();
+            try
+            {
+                // HKCU
+                using var cu = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
+                if (cu != null) foreach (var v in cu.GetValueNames()) entries.Add(new AutoStartEntry { Name = v, Path = cu.GetValue(v)?.ToString() ?? "", Location = "HKCU", Type = "Registry" });
+
+                // HKLM
+                using var lm = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
+                if (lm != null) foreach (var v in lm.GetValueNames()) entries.Add(new AutoStartEntry { Name = v, Path = lm.GetValue(v)?.ToString() ?? "", Location = "HKLM", Type = "Registry" });
+
+                // Startup Folder
+                string sf = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                if (Directory.Exists(sf)) foreach (var f in Directory.GetFiles(sf, "*.lnk")) entries.Add(new AutoStartEntry { Name = Path.GetFileName(f), Path = f, Location = sf, Type = "Shortcut" });
+
+                // Task Scheduler (basic scan)
+                using var ts = new TaskScheduler();
+                foreach (var t in ts.RootFolder.GetTasks())
+                    if (t.Name.StartsWith(TaskNamePrefix) || t.Definition.Actions.Count > 0)
+                        entries.Add(new AutoStartEntry { Name = t.Name, Path = t.Definition.Actions[0]?.Path ?? "", Location = "TaskScheduler", Type = "Scheduled Task" });
+            }
+            catch { }
+            return entries;
         }
 
-        public static void AddToRegistryLocalMachine(string appPath)
+        public static bool AddEntry(string name, string path, string location = "Registry")
         {
-            using var key = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
-            key?.SetValue("X6ProUnLocker", appPath);
+            try
+            {
+                switch (location)
+                {
+                    case "Registry":
+                        Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)?.SetValue(name, path);
+                        break;
+                    case "HKLM":
+                        Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)?.SetValue(name, path);
+                        break;
+                    case "Startup":
+                        CreateShortcut(path, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), name + ".lnk"));
+                        break;
+                    case "TaskScheduler":
+                        using (var ts = new TaskScheduler())
+                        {
+                            var task = ts.NewTask();
+                            task.RegistrationInfo.Description = name;
+                            task.Triggers.Add(new Microsoft.Win32.TaskScheduler.LogonTrigger());
+                            task.Actions.Add(new Microsoft.Win32.TaskScheduler.ExecAction(path));
+                            ts.RootFolder.RegisterTaskDefinition(TaskNamePrefix + name, task);
+                        }
+                        break;
+                }
+                return true;
+            }
+            catch { return false; }
         }
 
-        public static void AddToStartupFolder(string appPath)
+        public static bool RemoveEntry(string name, string location, string path = "")
         {
-            string folder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-            string linkPath = Path.Combine(folder, "X6ProUnLocker.lnk");
-            CreateShortcut(appPath, linkPath);
+            try
+            {
+                switch (location)
+                {
+                    case "HKCU":
+                        Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)?.DeleteValue(name, false);
+                        break;
+                    case "HKLM":
+                        Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)?.DeleteValue(name, false);
+                        break;
+                    case "Startup":
+                        string lnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), name + ".lnk");
+                        if (File.Exists(lnk)) File.Delete(lnk);
+                        break;
+                    case "TaskScheduler":
+                        using (var ts = new TaskScheduler()) ts.RootFolder.DeleteTask(name, false);
+                        break;
+                    case "Service":
+                        System.Diagnostics.Process.Start("sc", $"stop {name}").WaitForExit();
+                        System.Diagnostics.Process.Start("sc", $"delete {name}").WaitForExit();
+                        break;
+                }
+                return true;
+            }
+            catch { return false; }
         }
 
         private static void CreateShortcut(string targetPath, string shortcutPath)
@@ -43,108 +111,7 @@ namespace X6ProUnLocker.Core
             shortcut.WorkingDirectory = Path.GetDirectoryName(targetPath);
             shortcut.Save();
             Marshal.ReleaseComObject(shortcut);
-            Marshal.ReleaseComObject(shell);
-        }
-
-        public static void AddToTaskScheduler(string appPath)
-        {
-            using (var ts = new TaskScheduler())
-            {
-                var task = ts.NewTask();
-                task.RegistrationInfo.Description = "X6ProUnLocker autorun";
-                task.Triggers.Add(new Microsoft.Win32.TaskScheduler.LogonTrigger());
-                task.Actions.Add(new Microsoft.Win32.TaskScheduler.ExecAction(appPath));
-                ts.RootFolder.RegisterTaskDefinition(TaskName, task);
-            }
-        }
-
-        public static void AddToService(string appPath)
-        {
-            System.Diagnostics.Process.Start("sc", $"create {ServiceName} binPath= \"{appPath}\" start= auto");
-        }
-
-        public static void AddToWinIni(string appPath)
-        {
-            string winIniPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "win.ini");
-            if (!File.Exists(winIniPath)) return;
-            var lines = new System.Collections.Generic.List<string>(File.ReadAllLines(winIniPath));
-            bool inWindows = false;
-            for (int i = 0; i < lines.Count; i++)
-            {
-                if (lines[i].Trim().Equals("[windows]", StringComparison.OrdinalIgnoreCase))
-                {
-                    inWindows = true;
-                    continue;
-                }
-                if (inWindows && lines[i].Trim().StartsWith("load="))
-                {
-                    lines[i] += "," + appPath;
-                    File.WriteAllLines(winIniPath, lines);
-                    return;
-                }
-            }
-            lines.Add("[windows]");
-            lines.Add($"load={appPath}");
-            File.WriteAllLines(winIniPath, lines);
-        }
-
-        public static void RemoveAll()
-        {
-            using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
-                key?.DeleteValue("X6ProUnLocker", false);
-            using (var key = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
-                key?.DeleteValue("X6ProUnLocker", false);
-
-            string folder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-            string link = Path.Combine(folder, "X6ProUnLocker.lnk");
-            if (File.Exists(link)) File.Delete(link);
-
-            try
-            {
-                using (var ts = new TaskScheduler())
-                {
-                    ts.RootFolder.DeleteTask(TaskName, false);
-                }
-            }
-            catch { }
-
-            try
-            {
-                ServiceController sc = new ServiceController(ServiceName);
-                if (sc.Status != ServiceControllerStatus.Stopped)
-                    sc.Stop();
-                System.Diagnostics.Process.Start("sc", $"delete {ServiceName}");
-            }
-            catch { }
-
-            string winIniPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "win.ini");
-            if (File.Exists(winIniPath))
-            {
-                var lines = new System.Collections.Generic.List<string>(File.ReadAllLines(winIniPath));
-                bool inWindows = false;
-                for (int i = 0; i < lines.Count; i++)
-                {
-                    if (lines[i].Trim().Equals("[windows]", StringComparison.OrdinalIgnoreCase))
-                    {
-                        inWindows = true;
-                        continue;
-                    }
-                    if (inWindows && lines[i].Trim().StartsWith("load="))
-                    {
-                        string load = lines[i].Substring(5);
-                        var parts = load.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                        var newParts = new System.Collections.Generic.List<string>();
-                        foreach (var p in parts)
-                        {
-                            if (!p.Trim().Equals(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName, StringComparison.OrdinalIgnoreCase))
-                                newParts.Add(p);
-                        }
-                        lines[i] = "load=" + string.Join(",", newParts);
-                        File.WriteAllLines(winIniPath, lines);
-                        break;
-                    }
-                }
-            }
+            Marshal.ReleaseCOMObject(shell);
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace X6ProUnLocker.Core
 {
@@ -10,7 +11,8 @@ namespace X6ProUnLocker.Core
         public int Pid { get; set; }
         public string Name { get; set; } = "";
         public string? Path { get; set; }
-        public long Memory { get; set; } // in bytes
+        public long Memory { get; set; }
+        public double CpuPercent { get; set; }
     }
 
     public static class ProcessManager
@@ -18,40 +20,48 @@ namespace X6ProUnLocker.Core
         public static List<ProcessInfo> GetProcessList()
         {
             var list = new List<ProcessInfo>();
-            IntPtr snapshot = WinApiNative.CreateToolhelp32Snapshot(0x00000002, 0); // TH32CS_SNAPPROCESS
+            IntPtr snapshot = WinApiNative.CreateToolhelp32Snapshot(WinApiNative.TH32CS_SNAPPROCESS, 0);
             if (snapshot == IntPtr.Zero) return list;
 
-            var entry = new WinApiNative.PROCESSENTRY32();
-            entry.dwSize = (uint)Marshal.SizeOf(entry);
-
-            if (WinApiNative.Process32First(snapshot, ref entry))
+            var entry = new WinApiNative.PROCESSENTRY32 { dwSize = (uint)Marshal.SizeOf<WinApiNative.PROCESSENTRY32>() };
+            if (!WinApiNative.Process32First(snapshot, ref entry))
             {
-                do
-                {
-                    var info = new ProcessInfo
-                    {
-                        Pid = (int)entry.th32ProcessID,
-                        Name = entry.szExeFile
-                    };
-                    // Try to open process to get path
-                    IntPtr hProcess = WinApiNative.OpenProcess(0x0400 | 0x0010, false, entry.th32ProcessID); // PROCESS_QUERY_INFORMATION | PROCESS_VM_READ
-                    if (hProcess != IntPtr.Zero)
-                    {
-                        var sb = new System.Text.StringBuilder(260);
-                        if (WinApiNative.GetModuleFileNameEx(hProcess, IntPtr.Zero, sb, (uint)sb.Capacity) > 0)
-                            info.Path = sb.ToString();
-                        WinApiNative.CloseHandle(hProcess);
-                    }
-                    // Get memory via Process class
-                    try
-                    {
-                        var proc = Process.GetProcessById(info.Pid);
-                        info.Memory = proc.WorkingSet64;
-                    }
-                    catch { }
-                    list.Add(info);
-                } while (WinApiNative.Process32Next(snapshot, ref entry));
+                WinApiNative.CloseHandle(snapshot);
+                return list;
             }
+
+            do
+            {
+                var info = new ProcessInfo { Pid = (int)entry.th32ProcessID, Name = entry.szExeFile };
+
+                // Получаем путь с fallback'ом для совместимости
+                IntPtr hProc = WinApiNative.OpenProcess(WinApiNative.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.th32ProcessID);
+                if (hProc != IntPtr.Zero)
+                {
+                    var sb = new StringBuilder(260);
+                    int size = 260;
+                    if (WinApiNative.QueryFullProcessImageName(hProc, 0, sb, ref size))
+                        info.Path = sb.ToString();
+                    else
+                    {
+                        var sb2 = new StringBuilder(260);
+                        if (WinApiNative.GetModuleFileNameEx(hProc, IntPtr.Zero, sb2, (uint)sb2.Capacity) > 0)
+                            info.Path = sb2.ToString();
+                    }
+                    WinApiNative.CloseHandle(hProc);
+                }
+
+                try
+                {
+                    var p = Process.GetProcessById(info.Pid);
+                    info.Memory = p.WorkingSet64;
+                    info.CpuPercent = 0; // Заглушка, реальное измерение требует двух выборок
+                }
+                catch { }
+
+                list.Add(info);
+            } while (WinApiNative.Process32Next(snapshot, ref entry));
+
             WinApiNative.CloseHandle(snapshot);
             return list;
         }
