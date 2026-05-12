@@ -23,7 +23,7 @@ namespace X6ProUnLocker.Core
         public const uint PROCESS_QUERY_INFORMATION = 0x0400;
         public const uint PROCESS_VM_READ = 0x0010;
         public const uint PROCESS_TERMINATE = 0x0001;
-        public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000; // добавлено
+        public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
 
         // Snapshot flags
         public const uint TH32CS_SNAPPROCESS = 0x00000002;
@@ -42,8 +42,11 @@ namespace X6ProUnLocker.Core
         [DllImport(ADVAPI32, SetLastError = true)]
         public static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
 
-        [DllImport(ADVAPI32, SetLastError = true)]
-        public static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out long lpLuid);
+        [DllImport(ADVAPI32, SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern bool LookupPrivilegeValue(
+            [MarshalAs(UnmanagedType.LPWStr)] string? lpSystemName,
+            string lpName,
+            out long lpLuid);
 
         [DllImport(ADVAPI32, SetLastError = true)]
         public static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool DisableAllPrivileges,
@@ -85,7 +88,6 @@ namespace X6ProUnLocker.Core
         [DllImport("psapi.dll", SetLastError = true)]
         public static extern uint GetModuleFileNameEx(IntPtr hProcess, IntPtr hModule, StringBuilder lpFilename, uint nSize);
 
-        // Добавленный метод
         [DllImport(KERNEL32, SetLastError = true)]
         public static extern bool QueryFullProcessImageName(IntPtr hProcess, uint dwFlags, StringBuilder lpExeName, ref int lpdwSize);
 

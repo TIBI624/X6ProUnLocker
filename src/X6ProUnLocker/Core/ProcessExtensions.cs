@@ -8,7 +8,6 @@ namespace X6ProUnLocker.Core
     {
         public static double GetCpuUsage(this Process process)
         {
-            // Простейший способ требует двух замеров, для упрощения вернём 0
             return 0;
         }
 
@@ -16,7 +15,7 @@ namespace X6ProUnLocker.Core
         {
             try
             {
-                return FileVersionInfo.GetVersionInfo(process.MainModule.FileName).CompanyName ?? "";
+                return process.MainModule?.FileVersionInfo.CompanyName ?? "";
             }
             catch
             {

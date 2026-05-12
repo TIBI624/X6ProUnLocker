@@ -10,16 +10,15 @@ namespace X6ProUnLocker.Core
     {
         public static void RegisterEarlyBootService()
         {
-            string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            string? exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            if (exePath == null) return;
             try
             {
-                // Используем sc.exe для создания службы (можно и через P/Invoke CreateService)
                 System.Diagnostics.Process.Start("sc", $"create X6ProUnLockerEarlyBoot binPath= \"{exePath}\" start= auto");
-                // В реальном коде лучше использовать ServiceController или CreateService
             }
-            catch (Exception ex)
+            catch
             {
-                // Логирование будет через внешний метод
+                // ignored
             }
         }
 
@@ -37,7 +36,6 @@ namespace X6ProUnLocker.Core
                 }
                 else
                 {
-                    // Проверка подписи через VirusScanner (можно вынести общий метод)
                     bool valid = HasValidSignature(path);
                     if (!valid)
                         log($"⚠️ File without valid signature: {file}", Colors.Yellow);
@@ -47,7 +45,6 @@ namespace X6ProUnLocker.Core
 
         private static bool HasValidSignature(string filePath)
         {
-            // Используем тот же метод, что и в VirusScanner
             try
             {
                 var fileInfo = new WinApiNative.WINTRUST_FILE_INFO

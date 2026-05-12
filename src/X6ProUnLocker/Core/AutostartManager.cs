@@ -2,9 +2,11 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;   // добавлен для Marshal
 using System.ServiceProcess;
 using System.Text;
 using TaskScheduler = Microsoft.Win32.TaskScheduler.TaskService;
+using Microsoft.Win32.TaskScheduler;     // для ExecAction
 
 namespace X6ProUnLocker.Core
 {
@@ -34,7 +36,16 @@ namespace X6ProUnLocker.Core
                 using var ts = new TaskScheduler();
                 foreach (var t in ts.RootFolder.GetTasks())
                     if (t.Name.StartsWith(TaskNamePrefix) || t.Definition.Actions.Count > 0)
-                        entries.Add(new AutoStartEntry { Name = t.Name, Path = t.Definition.Actions[0]?.Path ?? "", Location = "TaskScheduler", Type = "Scheduled Task" });
+                    {
+                        var firstAction = t.Definition.Actions[0] as ExecAction;   // исправлено приведение
+                        entries.Add(new AutoStartEntry
+                        {
+                            Name = t.Name,
+                            Path = firstAction?.Path ?? "",
+                            Location = "TaskScheduler",
+                            Type = "Scheduled Task"
+                        });
+                    }
             }
             catch { }
             return entries;

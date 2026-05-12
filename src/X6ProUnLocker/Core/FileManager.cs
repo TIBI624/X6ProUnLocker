@@ -16,6 +16,7 @@ namespace X6ProUnLocker.Core
                 return false;
 
             long luid;
+            // исправлен вызов: передаём null через string? параметр
             if (!WinApiNative.LookupPrivilegeValue(null, WinApiNative.SE_TAKE_OWNERSHIP_NAME, out luid))
             {
                 WinApiNative.CloseHandle(hToken);
@@ -31,6 +32,9 @@ namespace X6ProUnLocker.Core
             WinApiNative.CloseHandle(hToken);
 
             WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            // identity.User не будет null в нормальном контексте, но успокоим компилятор
+            if (identity.User == null)
+                return false;
             byte[] sid = new byte[identity.User.BinaryLength];
             identity.User.GetBinaryForm(sid, 0);
             GCHandle handle = GCHandle.Alloc(sid, GCHandleType.Pinned);

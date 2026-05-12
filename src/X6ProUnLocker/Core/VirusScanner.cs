@@ -9,14 +9,14 @@ namespace X6ProUnLocker.Core
 {
     public class ScanResultEventArgs : EventArgs
     {
-        public string FilePath { get; set; }
+        public string FilePath { get; set; } = string.Empty;   // значение по умолчанию
         public bool IsMalware { get; set; }
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
     }
 
     public class VirusScanner
     {
-        public event EventHandler<ScanResultEventArgs> ScanCompleted;
+        public event EventHandler<ScanResultEventArgs>? ScanCompleted;   // nullable event
 
         private static readonly string[] KnownMalwareHashes = {
             "e99a18c428cb38d5f260853678922e03",
