@@ -107,7 +107,7 @@ namespace X6ProUnLocker
             {
                 if (FileManager.ReplaceSystemUtility(path, selectedExePath, Log))
                     Log(LanguageManager.Get("StatusSuccess").Replace("{0}", $"{name} replaced"), Colors.LightGreen);
-                else Log(LanguageManager.Get("StatusError").Replace("{0}, "Failed"), Colors.Red);
+                else Log(LanguageManager.Get("StatusError").Replace("{0}", "Failed"), Colors.Red);
             }
         }
 
@@ -168,8 +168,6 @@ namespace X6ProUnLocker
             SubtitleText.Text = LanguageManager.Get("Subtitle");
             CheckEnvironment();
         }
-
-        private void RefreshProcesses_Click(object sender, RoutedEventArgs e) => RefreshProcesses();
 
         private void Log(string message, Color color)
         {
